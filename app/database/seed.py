@@ -559,6 +559,50 @@ TICKETS = [
     },
 ]
 
+OPEN_TICKETS = [
+    {
+        "ticket_number": "INC0001001",
+        "title": "VPN drops every 30 minutes — affects entire sales floor",
+        "description": "Multiple users on the 3rd floor sales team are reporting VPN disconnections every 20-30 minutes. They have to manually reconnect each time. Issue started this morning after last night's network maintenance window. Approximately 12 users affected. Manager is escalating due to missed client calls.",
+        "category": "Network", "priority": "P2", "status": "Open",
+        "assigned_team": "Network Team",
+        "tags": "vpn,disconnect,sales,multiple users,maintenance"
+    },
+    {
+        "ticket_number": "INC0001002",
+        "title": "User cannot access SharePoint — colleagues on same team can",
+        "description": "User reports they cannot access the Marketing team SharePoint site. When they navigate to the URL they receive 'Access Denied'. Their three colleagues on the same team have full access. User has not changed any settings and was able to access it last week. They need access to upload campaign files before end of day.",
+        "category": "Access", "priority": "P3", "status": "Open",
+        "assigned_team": "Access Management",
+        "tags": "sharepoint,access denied,entitlement,comparison"
+    },
+    {
+        "ticket_number": "INC0001003",
+        "title": "Outlook crashes immediately on open — user cannot send or receive email",
+        "description": "User's Outlook crashes within 5 seconds of opening every time. Error message shown briefly: 'Microsoft Outlook has stopped working'. Issue started after Windows update applied yesterday. User is in the Finance team and cannot receive time-sensitive payment confirmations. Tried restarting laptop — no change.",
+        "category": "Email", "priority": "P2", "status": "In Progress",
+        "assigned_team": "Email & Collaboration",
+        "tags": "outlook,crash,windows update,email,finance"
+    },
+    {
+        "ticket_number": "INC0001004",
+        "title": "Suspicious email received — possible phishing attempt",
+        "description": "User received an email claiming to be from 'IT Security Team' asking them to click a link to verify their credentials or their account will be suspended in 24 hours. The sender email is it-security@company-helpdesk.net. User has NOT clicked the link and forwarded it to the helpdesk immediately. Needs confirmation on whether it is safe.",
+        "category": "Security", "priority": "P2", "status": "Open",
+        "assigned_team": "Security Operations",
+        "tags": "phishing,suspicious email,credential,security"
+    },
+    {
+        "ticket_number": "INC0001005",
+        "title": "API returning 401 errors — client integration broken since midnight",
+        "description": "Client reports their automated integration with our payment API has been returning 401 Unauthorized errors since approximately midnight. No changes were made to their code. The same API key was working fine yesterday. This is blocking their overnight batch processing and they are reporting significant business impact. Client account: Acme Corp.",
+        "category": "Access", "priority": "P1", "status": "Open",
+        "assigned_team": "Access Management",
+        "tags": "api,401,unauthorized,client,batch,p1,midnight"
+    },
+]
+
+
 def seed_if_empty():
     db = SessionLocal()
     try:
@@ -570,8 +614,10 @@ def seed_if_empty():
         db.commit()
         for t in TICKETS:
             db.add(Ticket(**t))
+        for t in OPEN_TICKETS:
+            db.add(Ticket(**t))
         db.commit()
-        print(f"  Seeded {len(TEAMS)} teams and {len(TICKETS)} tickets.")
+        print(f"  Seeded {len(TEAMS)} teams and {len(TICKETS) + len(OPEN_TICKETS)} tickets.")
     finally:
         db.close()
 

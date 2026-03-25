@@ -30,22 +30,28 @@ def get_specialist_guidance(description: str, resolved_tickets: list) -> dict:
 
     ticket_summaries = "\n\n---\n\n".join([summarise(t) for t in resolved_tickets])
 
-    prompt = f"""You are an IT support AI assistant helping a support specialist resolve an open ticket.
-The specialist has described the symptoms below. Using the past resolved tickets as your knowledge base,
-give them a clear actionable playbook telling them exactly what to do.
+    prompt = f"""You are an IT support AI assistant. Your ONLY knowledge source is the past resolved tickets provided below.
+You must not use any outside knowledge, general IT best practices, or information not present in these tickets.
 
 SPECIALIST'S ISSUE:
 {description}
 
-PAST RESOLVED TICKETS (knowledge base):
+PAST RESOLVED TICKETS (your only knowledge source):
 {ticket_summaries}
+
+Instructions:
+- Read the past tickets carefully and identify any that are relevant to the specialist's issue.
+- If relevant tickets exist, base your guidance ONLY on what those tickets document — the exact steps taken, root causes found, and teams involved.
+- If NO past tickets are relevant to this issue, you must say so honestly. Set confidence to "Low", leave referenced_tickets empty, and set likely_issue to "No matching cases found in the knowledge base — this issue has not been seen before."
+- Do NOT invent steps, draw on general IT knowledge, or guess at solutions not evidenced by the past tickets.
+- Do NOT reference a ticket unless it is directly relevant to this specific issue.
 
 Return a JSON object with this exact structure:
 {{
-  "likely_issue": "One sentence — what this issue most likely is",
+  "likely_issue": "One sentence — what this issue most likely is based on past tickets, or state no match was found",
   "confidence": "High" or "Medium" or "Low",
   "guidance": [
-    "Step 1: specific action",
+    "Step 1: specific action from past ticket",
     "Step 2: next action",
     "Step 3: etc"
   ],
@@ -53,15 +59,10 @@ Return a JSON object with this exact structure:
   "escalation_needed": true or false,
   "escalation_team": "Exact team name if needed, else null",
   "escalation_instructions": "How to escalate — what system, what info to include, else null",
-  "estimated_resolution_time": "e.g. 30 minutes, 2 hours, 1 business day",
-  "warning": "Important caution the specialist must know, or null"
+  "estimated_resolution_time": "e.g. 30 minutes, 2 hours, 1 business day, or null if unknown",
+  "warning": "Important caution from past tickets, or null"
 }}
 
-Rules:
-- Only reference tickets directly relevant to this issue.
-- If past tickets involved opening a request with another team, include exactly how in escalation_instructions.
-- Guidance steps must be specific and actionable — not generic advice.
-- If no past tickets match, still provide general guidance based on the issue type.
 Return ONLY valid JSON with no markdown."""
 
     response = client.messages.create(
@@ -87,55 +88,6 @@ Return ONLY valid JSON with no markdown."""
             "warning": None
         }
 
-
-def find_similar_tickets(user_description: str, resolved_tickets: list) -> dict:
-    ticket_summaries = "\n\n".join([
-        f"Ticket: {t.ticket_number}\n"
-        f"Title: {t.title}\n"
-        f"Description: {t.description}\n"
-        f"Category: {t.category}\n"
-        f"Resolution: {t.resolution}\n"
-        f"Tags: {t.tags}"
-        for t in resolved_tickets
-    ])
-
-    prompt = f"""You are an IT support AI assistant. A user has described an issue.
-Your job is to find the most similar past resolved tickets from our database.
-
-USER ISSUE:
-{user_description}
-
-RESOLVED TICKETS DATABASE:
-{ticket_summaries}
-
-Return a JSON object with this exact structure:
-{{
-  "matches": [
-    {{
-      "ticket_number": "INC...",
-      "similarity_score": 0-100,
-      "reason": "One sentence explaining why this matches",
-      "confidence": "High" | "Medium" | "Low"
-    }}
-  ],
-  "top_category": "Network|Software|Hardware|Access|Email|Security",
-  "summary": "One sentence describing what the user's issue appears to be"
-}}
-
-Return at most 3 matches. Only include tickets with similarity_score >= 30.
-If no tickets match well, return an empty matches array.
-Return ONLY valid JSON, no markdown, no explanation."""
-
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    try:
-        return json.loads(response.content[0].text)
-    except Exception:
-        return {"matches": [], "top_category": "Software", "summary": user_description}
 
 
 def classify_new_ticket(description: str, teams: list) -> dict:
@@ -172,7 +124,7 @@ Return ONLY valid JSON."""
     )
 
     try:
-        return json.loads(response.content[0].text)
+        return _extract_json(response.content[0].text)
     except Exception:
         return {
             "title": description[:60],
@@ -184,8 +136,22 @@ Return ONLY valid JSON."""
         }
 
 
-def suggest_next_action(ticket) -> dict:
+def suggest_next_action(ticket, resolved_tickets: list = None) -> dict:
+    # Build knowledge base context from similar resolved tickets in the same category
+    kb_context = ""
+    if resolved_tickets:
+        same_cat = [t for t in resolved_tickets if t.category == ticket.category][:10]
+        if same_cat:
+            summaries = "\n\n".join([
+                f"Ticket: {t.ticket_number} | {t.title}\n"
+                f"Resolution: {(t.resolution or '')[:200]}\n"
+                f"Steps: {(t.resolution_notes or '')[:300]}"
+                for t in same_cat
+            ])
+            kb_context = f"\n\nPAST RESOLVED TICKETS IN THIS CATEGORY (use these to inform your advice):\n{summaries}"
+
     prompt = f"""You are an IT support coaching AI. A specialist just received this ticket and needs their immediate next action.
+Base your advice on the past resolved tickets provided where relevant. Do not invent steps not evidenced by past tickets or the ticket description.
 
 TICKET:
 Number: {ticket.ticket_number}
@@ -194,7 +160,7 @@ Description: {ticket.description}
 Category: {ticket.category}
 Priority: {ticket.priority}
 Status: {ticket.status}
-Assigned Team: {ticket.assigned_team}
+Assigned Team: {ticket.assigned_team}{kb_context}
 
 Return a JSON object with this exact structure:
 {{
@@ -225,7 +191,7 @@ Return ONLY valid JSON."""
     )
 
     try:
-        return json.loads(response.content[0].text)
+        return _extract_json(response.content[0].text)
     except Exception:
         return {
             "next_actions": [

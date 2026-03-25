@@ -51,7 +51,8 @@ def create_ticket(
 @router.post("/{ticket_id}/analyze")
 def analyze_ticket(ticket_id: int, db: Session = Depends(get_db)):
     ticket = ticket_service.get_ticket(db, ticket_id)
-    guidance = ai_service.suggest_next_action(ticket)
+    resolved = ticket_service.get_resolved_tickets(db)
+    guidance = ai_service.suggest_next_action(ticket, resolved)
     ticket_service.save_ai_guidance(db, ticket_id, json.dumps(guidance))
     actions_summary = "; ".join(guidance.get("next_actions", [])[:2])
     ticket_service.add_work_note(db, ticket_id, "ai_suggestion",

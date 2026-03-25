@@ -60,10 +60,12 @@ def get_knowledge_gaps(db: Session, limit: int = 5) -> list[dict]:
 
 
 def get_recent_low_confidence_count(db: Session, hours: int = 24) -> int:
-    from datetime import datetime, timezone, timedelta
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
+    # SQLite returns timezone-naive datetimes — compare naive to naive
+    from datetime import datetime, timedelta
+    cutoff = datetime.utcnow() - timedelta(hours=hours)
     return (
         db.query(SearchLog)
-        .filter(SearchLog.confidence == "Low", SearchLog.created_at >= cutoff)
+        .filter(SearchLog.confidence == "Low", SearchLog.referenced_count == 0,
+                SearchLog.created_at >= cutoff)
         .count()
     )

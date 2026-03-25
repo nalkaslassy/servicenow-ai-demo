@@ -136,8 +136,10 @@
 
 <!-- No references fallback -->
 {% if not referenced %}
-<div class="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-500">
-  No directly matching past tickets found. The guidance above is based on general best practices for this issue type.
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-6">
+  <p class="text-sm font-semibold text-amber-800 mb-1">No matching cases in the knowledge base</p>
+  <p class="text-sm text-amber-700">This issue has not been seen before — no past resolved tickets matched. To get AI guidance on this in future, resolve a ticket covering this topic with detailed resolution notes. It will enter the knowledge base immediately.</p>
+  <p class="text-xs text-amber-600 mt-2">This search has been logged as a knowledge gap in <a href="/analytics" class="underline hover:text-amber-800">Analytics</a>.</p>
 </div>
 {% endif %}
 

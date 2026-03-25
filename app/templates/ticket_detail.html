@@ -16,6 +16,12 @@
 </div>
 {% endif %}
 
+{% if status_error %}
+<div class="bg-red-50 border border-red-300 text-red-800 rounded-xl p-4 mb-4 text-sm">
+  ⚠ {{ status_error }}
+</div>
+{% endif %}
+
 <div class="max-w-3xl mx-auto space-y-4">
 
   <!-- Header -->
@@ -119,12 +125,12 @@
       <!-- Resolution fields — shown only when Resolved is selected -->
       <div id="resolution-fields" class="hidden space-y-2 border-t border-gray-100 pt-3">
         <p class="text-xs font-medium text-gray-600">Document the resolution — this enters the knowledge base and improves future AI guidance:</p>
-        <input name="resolution" placeholder="One-sentence summary: what was the root cause and how was it fixed?"
+        <input name="resolution" id="resolution-input" placeholder="One-sentence summary: what was the root cause and how was it fixed?"
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
-        <textarea name="resolution_notes" rows="4"
+        <textarea name="resolution_notes" id="resolution-notes-input" rows="4"
           placeholder="Step-by-step notes — what you checked, what the root cause was, exactly what fixed it..."
           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-400"></textarea>
-        <p class="text-xs text-amber-600">The more detail here, the better the AI can help with similar issues in future.</p>
+        <p class="text-xs text-amber-600">Both fields are required before resolving — this is what future AI guidance is built from.</p>
       </div>
     </form>
   </div>
@@ -233,9 +239,14 @@
 <script>
   const sel = document.getElementById('status-select');
   const fields = document.getElementById('resolution-fields');
+  const resInput = document.getElementById('resolution-input');
+  const resNotes = document.getElementById('resolution-notes-input');
   if (sel && fields) {
     function toggle() {
-      fields.classList.toggle('hidden', sel.value !== 'Resolved');
+      const isResolving = sel.value === 'Resolved';
+      fields.classList.toggle('hidden', !isResolving);
+      if (resInput) resInput.required = isResolving;
+      if (resNotes) resNotes.required = isResolving;
     }
     sel.addEventListener('change', toggle);
     toggle();

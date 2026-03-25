@@ -33,13 +33,9 @@ def get_sla_info(ticket) -> dict:
     }
 
 def detect_major_incidents(tickets: list) -> list:
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+    # Flag any category with 3+ currently open/in-progress tickets
     buckets = defaultdict(int)
     for t in tickets:
         if t.status not in ("Resolved", "Closed"):
-            created = t.created_at
-            if created.tzinfo is None:
-                created = created.replace(tzinfo=timezone.utc)
-            if created >= cutoff:
-                buckets[t.category] += 1
+            buckets[t.category] += 1
     return [{"category": cat, "count": cnt} for cat, cnt in buckets.items() if cnt >= 3]
