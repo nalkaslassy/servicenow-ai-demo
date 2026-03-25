@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Guidance — IT Support Portal{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+  <a href="/" class="text-indigo-600 hover:underline text-sm">&larr; New Search</a>
+</div>
+
+<!-- Issue summary -->
+<div class="bg-white border border-gray-200 rounded-xl p-4 mb-6">
+  <p class="text-xs font-semibold text-gray-400 uppercase mb-1">You described</p>
+  <p class="text-sm text-gray-700">{{ description }}</p>
+</div>
+
+<!-- AI Guidance Playbook -->
+<div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-6 mb-6">
+
+  <!-- Header row -->
+  <div class="flex items-start justify-between flex-wrap gap-3 mb-5">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xl">🤖</span>
+        <h2 class="text-base font-bold text-indigo-800">AI Guidance</h2>
+        <span class="text-xs text-indigo-400 font-normal">Claude Haiku via Anthropic API</span>
+      </div>
+      <p class="text-sm text-indigo-700">{{ guidance.likely_issue }}</p>
+    </div>
+    <div class="flex gap-2 text-xs">
+      <span class="px-3 py-1 rounded-full font-semibold
+        {% if guidance.confidence == 'High' %}bg-green-100 text-green-700
+        {% elif guidance.confidence == 'Medium' %}bg-yellow-100 text-yellow-700
+        {% else %}bg-gray-100 text-gray-500{% endif %}">
+        {{ guidance.confidence }} Confidence
+      </span>
+      <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">
+        Est. {{ guidance.estimated_resolution_time }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Warning banner -->
+  {% if guidance.warning %}
+  <div class="bg-red-50 border border-red-200 rounded-xl p-3 mb-5 flex gap-2">
+    <span class="text-red-500 flex-shrink-0">⚠</span>
+    <p class="text-sm text-red-700">{{ guidance.warning }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Step-by-step guidance -->
+  <div class="mb-5">
+    <p class="text-xs font-semibold text-indigo-600 uppercase mb-3">What to do</p>
+    <ol class="space-y-3">
+      {% for step in guidance.guidance %}
+      <li class="flex gap-3">
+        <span class="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">
+          {{ loop.index }}
+        </span>
+        <p class="text-sm text-gray-800 pt-0.5">{{ step }}</p>
+      </li>
+      {% endfor %}
+    </ol>
+  </div>
+
+  <!-- Escalation block -->
+  {% if guidance.escalation_needed %}
+  <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-yellow-600">📋</span>
+      <p class="text-sm font-semibold text-yellow-800">Escalation Required — {{ guidance.escalation_team }}</p>
+    </div>
+    <p class="text-sm text-yellow-700">{{ guidance.escalation_instructions }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Referenced tickets note -->
+  {% if referenced %}
+  <p class="text-xs text-indigo-500 mt-4">
+    Guidance based on:
+    {% for t in referenced %}
+    <a href="/tickets/{{ t.id }}" class="font-semibold text-indigo-600 hover:underline">{{ t.ticket_number }}</a>{% if not loop.last %}, {% endif %}
+    {% endfor %}
+    — see below for full detail.
+  </p>
+  {% endif %}
+
+</div>
+
+<!-- Referenced Tickets -->
+{% if referenced %}
+<h3 class="text-sm font-bold text-gray-700 mb-3">Referenced Past Tickets</h3>
+<div class="space-y-3 mb-8">
+  {% for t in referenced %}
+  <div class="bg-white border border-gray-200 rounded-xl p-5 hover:border-indigo-300 transition">
+    <div class="flex items-start justify-between flex-wrap gap-3">
+
+      <div class="flex-1 min-w-0">
+        <!-- Ticket meta -->
+        <div class="flex items-center gap-2 mb-1 flex-wrap">
+          <span class="font-mono text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ t.ticket_number }}</span>
+          <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded">{{ t.category }}</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">{{ t.status }}</span>
+          <span class="text-xs font-bold
+            {% if t.priority == 'P1' %}text-red-600
+            {% elif t.priority == 'P2' %}text-orange-500
+            {% else %}text-yellow-600{% endif %}">
+            {{ t.priority }}
+          </span>
+        </div>
+
+        <h4 class="font-semibold text-gray-800 text-sm mb-1">{{ t.title }}</h4>
+
+        <!-- Resolution preview -->
+        {% if t.resolution %}
+        <p class="text-xs text-gray-500 leading-relaxed">
+          <span class="font-semibold text-green-700">How it was resolved:</span>
+          {{ t.resolution[:200] }}{% if t.resolution|length > 200 %}...{% endif %}
+        </p>
+        {% endif %}
+
+        {% if t.resolution_time_hours %}
+        <p class="text-xs text-gray-400 mt-1">⏱ Resolved in {{ t.resolution_time_hours }}h &bull; {{ t.assigned_team }}</p>
+        {% endif %}
+      </div>
+
+      <!-- View button -->
+      <a href="/tickets/{{ t.id }}"
+         class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition self-start">
+        View Full Detail →
+      </a>
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- No references fallback -->
+{% if not referenced %}
+<div class="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-6 text-center text-sm text-gray-500">
+  No directly matching past tickets found. The guidance above is based on general best practices for this issue type.
+</div>
+{% endif %}
+
+<!-- Feedback -->
+<div class="bg-white border border-gray-200 rounded-xl p-5 mt-6">
+  <p class="text-sm font-semibold text-gray-700 mb-3">Was this guidance helpful?</p>
+  <form method="post" action="/feedback/" class="flex items-center gap-4">
+    <input type="hidden" name="description" value="{{ description }}">
+    <input type="hidden" name="referenced_tickets" value="{{ guidance.referenced_tickets | join(',') if guidance.referenced_tickets else '' }}">
+    <button type="submit" name="helpful" value="1"
+      class="flex items-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 rounded-lg text-sm font-medium transition">
+      👍 Yes, it helped
+    </button>
+    <button type="submit" name="helpful" value="0"
+      class="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 rounded-lg text-sm font-medium transition">
+      👎 Not helpful
+    </button>
+  </form>
+</div>
+
+{% endblock %}

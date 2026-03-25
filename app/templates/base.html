@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}IT Support Portal{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Top Nav -->
+  <nav class="bg-indigo-700 text-white shadow-md">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 text-lg font-bold tracking-tight">
+        <span class="text-2xl">🎫</span>
+        <span>IT Support Portal</span>
+        <span class="ml-2 text-xs bg-indigo-500 rounded px-2 py-0.5 font-normal">AI-Powered</span>
+      </a>
+      <div class="flex gap-6 text-sm font-medium">
+        <a href="/" class="hover:text-indigo-200 transition">Guidance Search</a>
+        <a href="/tickets/" class="hover:text-indigo-200 transition">All Tickets</a>
+        <a href="/classify" class="hover:text-indigo-200 transition">Classify Ticket</a>
+        <a href="/analytics" class="hover:text-indigo-200 transition">Analytics</a>
+        <a href="/demo" class="hover:text-indigo-200 transition">How It Works</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash / alerts area -->
+  <div id="flash-area" class="max-w-6xl mx-auto px-4 mt-3 hidden"></div>
+
+  <!-- Main content -->
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="text-center text-xs text-gray-400 py-6 mt-8 border-t border-gray-200 space-y-1">
+    <div>
+      <span class="font-medium text-gray-500">ServiceNow AI Demo</span>
+      &mdash; AI guidance powered by
+      <span class="font-medium text-gray-500">Claude Haiku</span>
+      (<code class="bg-gray-100 text-gray-600 px-1 rounded">claude-haiku-4-5-20251001</code>)
+      via the Anthropic API
+    </div>
+    <div>Built with FastAPI &middot; SQLite &middot; SQLAlchemy &middot; Tailwind CSS &middot; RAG pattern</div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}How It Works — IT Support Portal{% endblock %}
+{% block content %}
+
+<div class="max-w-3xl mx-auto">
+
+  <h1 class="text-2xl font-bold text-gray-800 mb-2">How It Works</h1>
+  <p class="text-sm text-gray-500 mb-8">A walkthrough of the AI-powered guidance system — from symptom description to resolution playbook.</p>
+
+  <!-- System architecture -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+    <h2 class="text-base font-bold text-gray-800 mb-1">How the AI Generates Guidance</h2>
+    <p class="text-xs text-gray-400 mb-5">Every time a specialist searches, the system pulls all resolved tickets from the database and hands them to Claude as context. Claude reads your team's real history and reasons over it to produce guidance — so as more incidents are resolved and documented, the quality of future guidance improves automatically.</p>
+    <div class="space-y-4">
+
+      <div class="flex gap-4">
+        <div class="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold">1</div>
+        <div>
+          <p class="text-sm font-semibold text-gray-800">Specialist describes the symptoms</p>
+          <p class="text-sm text-gray-500 mt-0.5">Plain language — no form fields. Include the application name, exact error message, and who is affected. The more specific, the more targeted the guidance.</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <div class="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold">2</div>
+        <div>
+          <p class="text-sm font-semibold text-gray-800">All resolved tickets are retrieved from the database</p>
+          <p class="text-sm text-gray-500 mt-0.5">Every ticket that was previously resolved — with its title, category, resolution, and resolution notes — is pulled from the knowledge base and included in the prompt sent to Claude.</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <div class="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold">3</div>
+        <div>
+          <p class="text-sm font-semibold text-gray-800">Claude reads the past cases and identifies what matches</p>
+          <p class="text-sm text-gray-500 mt-0.5">Claude reads the symptom description alongside all the past resolved tickets. It identifies which past cases are similar and uses those resolutions to generate one or more actionable solutions — not a generic answer, but guidance grounded in what actually worked before.</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <div class="flex-shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold">4</div>
+        <div>
+          <p class="text-sm font-semibold text-gray-800">Specialist sees a step-by-step playbook + the source tickets</p>
+          <p class="text-sm text-gray-500 mt-0.5">The results page shows a prioritized action plan alongside the specific past tickets Claude referenced — so the specialist can verify the reasoning, drill into the original work notes, and judge whether the guidance applies.</p>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <div class="flex-shrink-0 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">5</div>
+        <div>
+          <p class="text-sm font-semibold text-gray-800">The system improves as more tickets are resolved</p>
+          <p class="text-sm text-gray-500 mt-0.5">Every ticket resolved with detailed resolution notes is added to the pool. The next time a similar issue comes in, Claude has that case to draw from — combining patterns across multiple past incidents to suggest the most likely solution. Better documentation = better future guidance.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Ticket lifecycle -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+    <h2 class="text-base font-bold text-gray-800 mb-4">Incident Lifecycle</h2>
+
+    <div class="relative pl-6 border-l-2 border-gray-200 space-y-6">
+
+      <div class="relative">
+        <div class="absolute -left-[25px] w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></div>
+        <p class="text-sm font-semibold text-gray-800">Open</p>
+        <p class="text-xs text-gray-500">Ticket is created and assigned to a team. SLA timer starts. Specialist reviews and begins investigation.</p>
+      </div>
+
+      <div class="relative">
+        <div class="absolute -left-[25px] w-4 h-4 bg-indigo-500 rounded-full border-2 border-white"></div>
+        <p class="text-sm font-semibold text-gray-800">In Progress</p>
+        <p class="text-xs text-gray-500">Specialist is actively working the issue. Work notes document every investigation step — what was checked, what was ruled out, what was escalated and why.</p>
+      </div>
+
+      <div class="relative">
+        <div class="absolute -left-[25px] w-4 h-4 bg-yellow-500 rounded-full border-2 border-white"></div>
+        <p class="text-sm font-semibold text-gray-800">Pending (Vendor / Approval / Another Team)</p>
+        <p class="text-xs text-gray-500">Ticket is waiting on an external dependency. A sub-ticket may be opened for another team (e.g. Network, Fund Services, API Platform). SLA clock continues.</p>
+      </div>
+
+      <div class="relative">
+        <div class="absolute -left-[25px] w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+        <p class="text-sm font-semibold text-gray-800">Resolved</p>
+        <p class="text-xs text-gray-500">Issue is fixed and confirmed by the user. Resolution notes document exactly what was done — this is what future AI guidance is built from. Quality notes = better future guidance.</p>
+      </div>
+
+      <div class="relative">
+        <div class="absolute -left-[25px] w-4 h-4 bg-gray-400 rounded-full border-2 border-white"></div>
+        <p class="text-sm font-semibold text-gray-800">Closed</p>
+        <p class="text-xs text-gray-500">User confirmed resolution and ticket is closed. Historical record is preserved in the knowledge base.</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Key business rules -->
+  <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-6 mb-6">
+    <h2 class="text-base font-bold text-indigo-800 mb-3">Key Business Rules the AI Enforces</h2>
+    <ul class="space-y-2 text-sm text-indigo-700">
+      <li class="flex gap-2"><span>•</span><span><strong>Manager approval required before granting any permissions</strong> — the AI will always surface this requirement when access or entitlement changes are involved.</span></li>
+      <li class="flex gap-2"><span>•</span><span><strong>Sub-tickets for third-party systems</strong> — when the resolution requires action from another team (Fund Services, Network, Vendor), the AI specifies exactly what system to use and what information to include.</span></li>
+      <li class="flex gap-2"><span>•</span><span><strong>Never disable SSL verification</strong> — the AI explicitly warns against this as a security risk even when pressed for a quick workaround.</span></li>
+      <li class="flex gap-2"><span>•</span><span><strong>Secure credential delivery only</strong> — API keys and credentials are always delivered via secure channels, never plain email or chat.</span></li>
+      <li class="flex gap-2"><span>•</span><span><strong>Escalate P1 immediately</strong> — multiple teams blocked = P1. The AI will set priority and flag escalation path.</span></li>
+    </ul>
+  </div>
+
+  <!-- Example queries -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-6">
+    <h2 class="text-base font-bold text-gray-800 mb-3">Try These Example Queries</h2>
+    <div class="space-y-2">
+      {% set examples = [
+        "User can log into Salesforce but cannot edit records — their coworker with the same role can edit fine",
+        "Client API key stopped working overnight with a 401 error — no code changes were made",
+        "Access Denied on vendor portal when VPN is connected, works fine without VPN — multiple users affected",
+        "User cannot see the Reporting module in the application after last weekend's update",
+        "SSL certificate error on internal API endpoint — multiple teams are affected starting Monday",
+        "User plugged in a USB drive they found and now their endpoint protection is alerting",
+        "Fund Services portal shows Access Denied — manager and teammates can log in fine"
+      ] %}
+      {% for q in examples %}
+      <a href="/?prefill={{ q | urlencode }}"
+         class="block text-sm text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-lg px-3 py-2 transition">
+        → {{ q }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

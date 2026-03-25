@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}New Ticket — IT Support Portal{% endblock %}
+{% block content %}
+
+<div class="mb-6">
+  <a href="/" class="text-indigo-600 hover:underline text-sm">&larr; Back to Home</a>
+</div>
+
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-2xl font-bold text-gray-800 mb-2">Create New Support Ticket</h1>
+  <p class="text-sm text-gray-500 mb-6">
+    {% if classification %}
+    Our AI has pre-filled this form based on your issue. Review and edit if needed, then submit.
+    {% else %}
+    Fill in the details below and we'll route your ticket to the right team.
+    {% endif %}
+  </p>
+
+  {% if classification %}
+  <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-6 text-sm">
+    <p class="font-semibold text-indigo-800 mb-1">🤖 AI Routing Decision</p>
+    <p class="text-indigo-700">Priority: <strong>{{ classification.priority }}</strong> — {{ classification.priority_reason }}</p>
+    <p class="text-indigo-700 mt-1">Team: <strong>{{ classification.assigned_team }}</strong> — {{ classification.routing_reason }}</p>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/tickets/create" class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+    <!-- Title -->
+    <div class="mb-4">
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+      <input type="text" name="title" required
+        value="{{ classification.title if classification else '' }}"
+        placeholder="Short description of the issue"
+        class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    </div>
+
+    <!-- Description -->
+    <div class="mb-4">
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+      <textarea name="description" rows="4" required
+        placeholder="Detailed description of your issue..."
+        class="w-full border border-gray-300 rounded-lg p-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+      >{{ description }}</textarea>
+    </div>
+
+    <!-- Category + Priority row -->
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Category</label>
+        <select name="category" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          {% for cat in ["Network","Software","Hardware","Access","Email","Security"] %}
+          <option value="{{ cat }}" {% if classification and classification.category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Priority</label>
+        <select name="priority" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          {% for p, label in [("P1","P1 — Critical"),("P2","P2 — High"),("P3","P3 — Medium"),("P4","P4 — Low")] %}
+          <option value="{{ p }}" {% if classification and classification.priority == p %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Assigned Team -->
+    <div class="mb-6">
+      <label class="block text-sm font-semibold text-gray-700 mb-1">Assign to Team</label>
+      <select name="assigned_team" class="w-full border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        {% for team in ["Network Team","Software Support","Hardware Support","Access Management","Email & Collaboration","Security Operations"] %}
+        <option value="{{ team }}" {% if classification and classification.assigned_team == team %}selected{% endif %}>{{ team }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit"
+      class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 rounded-lg transition text-sm">
+      🎫 Submit Ticket
+    </button>
+  </form>
+</div>
+
+{% endblock %}

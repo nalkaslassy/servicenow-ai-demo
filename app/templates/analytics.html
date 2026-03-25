@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Analytics — IT Support Portal{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">Analytics</h1>
+  <span class="text-xs text-gray-400">Live data from your knowledge base</span>
+</div>
+
+<!-- Top row: feedback + escalation -->
+<div class="grid grid-cols-2 gap-4 mb-6">
+
+  <!-- AI Guidance Feedback -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <p class="text-xs font-semibold text-gray-400 uppercase mb-3">AI Guidance Feedback</p>
+    {% if feedback.total == 0 %}
+    <p class="text-sm text-gray-400">No feedback recorded yet — search for an issue and rate the guidance.</p>
+    {% else %}
+    <div class="flex items-end gap-4 mb-3">
+      <div>
+        <p class="text-3xl font-bold text-green-600">{{ feedback.helpful_pct }}%</p>
+        <p class="text-xs text-gray-500">Helpful rating</p>
+      </div>
+      <div class="text-sm text-gray-500 mb-1">
+        <span class="text-green-600 font-semibold">{{ feedback.helpful }}</span> yes &nbsp;/&nbsp;
+        <span class="text-red-500 font-semibold">{{ feedback.not_helpful }}</span> no &nbsp;/&nbsp;
+        {{ feedback.total }} total
+      </div>
+    </div>
+    <!-- Simple bar -->
+    <div class="w-full bg-gray-100 rounded-full h-2">
+      <div class="bg-green-500 h-2 rounded-full" style="width: {{ feedback.helpful_pct }}%"></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Escalation Rate -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <p class="text-xs font-semibold text-gray-400 uppercase mb-3">Escalation Rate</p>
+    <div class="flex items-end gap-4 mb-3">
+      <div>
+        <p class="text-3xl font-bold text-indigo-600">{{ escalation.rate_pct }}%</p>
+        <p class="text-xs text-gray-500">of tickets have sub-tickets</p>
+      </div>
+      <div class="text-sm text-gray-500 mb-1">
+        <span class="font-semibold">{{ escalation.escalated }}</span> escalated &nbsp;/&nbsp;
+        {{ escalation.total }} total
+      </div>
+    </div>
+    <div class="w-full bg-gray-100 rounded-full h-2">
+      <div class="bg-indigo-500 h-2 rounded-full" style="width: {{ escalation.rate_pct }}%"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Tickets by category -->
+<div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+  <p class="text-xs font-semibold text-gray-400 uppercase mb-4">Tickets by Category</p>
+  {% set max_count = by_category[0].count if by_category else 1 %}
+  <div class="space-y-3">
+    {% for row in by_category %}
+    <div class="flex items-center gap-3">
+      <span class="w-24 text-sm text-gray-600 text-right flex-shrink-0">{{ row.category }}</span>
+      <div class="flex-1 bg-gray-100 rounded-full h-4 relative">
+        <div class="bg-indigo-500 h-4 rounded-full" style="width: {{ (row.count / max_count * 100) | round }}%"></div>
+      </div>
+      <span class="w-8 text-sm font-semibold text-gray-700 text-right">{{ row.count }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Avg resolution by priority -->
+<div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+  <p class="text-xs font-semibold text-gray-400 uppercase mb-4">Avg Resolution Time by Priority (Resolved Tickets)</p>
+  {% if by_priority %}
+  <div class="grid grid-cols-4 gap-4">
+    {% for row in by_priority %}
+    <div class="text-center border border-gray-100 rounded-xl p-4">
+      <p class="text-2xl font-bold
+        {% if row.priority == 'P1' %}text-red-600
+        {% elif row.priority == 'P2' %}text-orange-500
+        {% elif row.priority == 'P3' %}text-yellow-600
+        {% else %}text-gray-500{% endif %}">
+        {{ row.avg_hours }}h
+      </p>
+      <p class="text-xs font-semibold text-gray-500 mt-1">{{ row.priority }}</p>
+      <p class="text-xs text-gray-400">{{ row.count }} tickets</p>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-sm text-gray-400">No resolved tickets with resolution time data yet.</p>
+  {% endif %}
+</div>
+
+<!-- Knowledge gaps -->
+<div class="bg-white border border-gray-200 rounded-xl p-5">
+  <p class="text-xs font-semibold text-gray-400 uppercase mb-1">Knowledge Gaps</p>
+  <p class="text-xs text-gray-400 mb-4">Recent searches where AI had Low confidence and found no matching tickets.</p>
+  {% if gaps %}
+  <div class="space-y-2">
+    {% for gap in gaps %}
+    <div class="flex items-start gap-3 py-2 border-b border-gray-100 last:border-0">
+      <span class="text-red-400 text-xs mt-0.5 flex-shrink-0">●</span>
+      <p class="text-sm text-gray-700 flex-1">{{ gap.description }}</p>
+      <span class="text-xs text-gray-400 flex-shrink-0">{{ gap.created_at.strftime('%b %d, %H:%M') if gap.created_at else '' }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="text-xs text-gray-400 mt-3">To close these gaps, resolve tickets covering these topics with good resolution notes — the AI will learn from them automatically.</p>
+  {% else %}
+  <p class="text-sm text-gray-400">No knowledge gaps detected. The AI is finding relevant tickets for all recent searches.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

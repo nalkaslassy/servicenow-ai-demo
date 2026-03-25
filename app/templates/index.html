@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}IT Support Portal — Guidance Search{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<div class="text-center mb-10">
+  <h1 class="text-3xl font-bold text-gray-800">What issue are you working on?</h1>
+  <p class="text-gray-500 mt-2">Describe the symptoms and the AI will search past resolved tickets to generate a step-by-step guidance playbook.</p>
+</div>
+
+<!-- Stats bar -->
+<div class="grid grid-cols-3 gap-4 mb-8">
+  <div class="bg-white rounded-xl shadow-sm p-4 text-center border border-gray-200">
+    <div class="text-2xl font-bold text-indigo-600">{{ stats.total }}</div>
+    <div class="text-xs text-gray-500 mt-1">Total Tickets</div>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-4 text-center border border-gray-200">
+    <div class="text-2xl font-bold text-green-600">{{ stats.resolved }}</div>
+    <div class="text-xs text-gray-500 mt-1">In Knowledge Base</div>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-4 text-center border border-gray-200">
+    <div class="text-2xl font-bold text-orange-500">{{ stats.open }}</div>
+    <div class="text-xs text-gray-500 mt-1">Open</div>
+  </div>
+</div>
+
+<!-- Search form -->
+<div class="bg-white rounded-2xl shadow-md p-8 max-w-2xl mx-auto border border-gray-200">
+  <h2 class="text-lg font-semibold text-gray-700 mb-1">Describe the issue you're working on</h2>
+  <p class="text-xs text-gray-400 mb-4">Include the application name, exact error message, and who is affected — the more specific, the better.</p>
+  <form method="POST" action="/search" id="search-form">
+    <textarea
+      name="description"
+      id="description"
+      rows="5"
+      required
+      minlength="10"
+      placeholder="e.g. User can log into Salesforce but cannot edit records. Their coworker with the same Sales Rep role can edit fine. Started after last weekend's update..."
+      class="w-full border border-gray-300 rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+    ></textarea>
+    <div class="flex items-center justify-between mt-4">
+      <span class="text-xs text-gray-400" id="char-count">0 characters</span>
+      <button
+        type="submit"
+        id="submit-btn"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-lg transition flex items-center gap-2"
+      >
+        <span id="btn-text">🔍 Get AI Guidance</span>
+        <span id="btn-loading" class="hidden">Searching knowledge base...</span>
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Secondary action -->
+<div class="text-center mt-4">
+  <a href="/classify" class="text-sm text-indigo-600 hover:underline">Or classify and route a new ticket with AI →</a>
+</div>
+
+<!-- Categories info -->
+<div class="mt-8 max-w-2xl mx-auto">
+  <p class="text-xs text-gray-400 text-center mb-4">Knowledge base covers:</p>
+  <div class="flex flex-wrap gap-2 justify-center">
+    {% for cat, icon in [("Network","🌐"),("Software","💻"),("Hardware","🖨️"),("Access","🔑"),("Email","📧"),("Security","🔒")] %}
+    <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs text-gray-600 shadow-sm">{{ icon }} {{ cat }}</span>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  const ta = document.getElementById('description');
+  const cc = document.getElementById('char-count');
+  ta.addEventListener('input', () => { cc.textContent = ta.value.length + ' characters'; });
+
+  document.getElementById('search-form').addEventListener('submit', () => {
+    document.getElementById('btn-text').classList.add('hidden');
+    document.getElementById('btn-loading').classList.remove('hidden');
+    document.getElementById('submit-btn').disabled = true;
+  });
+</script>
+{% endblock %}

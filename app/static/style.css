@@ -1,0 +1,15 @@
+/* ServiceNow AI Demo — custom styles (minimal, Tailwind handles most) */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+textarea, input, select {
+  font-family: inherit;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.ticket_number }} — IT Support Portal{% endblock %}
+{% block content %}
+
+<div class="mb-4 flex items-center gap-3 text-sm">
+  <a href="/tickets/" class="text-indigo-600 hover:underline">&larr; Dashboard</a>
+  {% if parent %}
+  <span class="text-gray-400">|</span>
+  <a href="/tickets/{{ parent.id }}" class="text-indigo-600 hover:underline">Parent: {{ parent.ticket_number }}</a>
+  {% endif %}
+</div>
+
+{% if request.query_params.get('created') %}
+<div class="bg-green-100 border border-green-300 text-green-800 rounded-xl p-4 mb-4 text-sm">
+  ✅ Ticket created. Click <strong>Analyze with AI</strong> below to get your next action.
+</div>
+{% endif %}
+
+<div class="max-w-3xl mx-auto space-y-4">
+
+  <!-- Header -->
+  <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+    <div class="flex items-start justify-between flex-wrap gap-3 mb-4">
+      <div>
+        <span class="font-mono text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{{ ticket.ticket_number }}</span>
+        {% if ticket.parent_ticket_id %}<span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">Sub-ticket</span>{% endif %}
+        <h1 class="text-xl font-bold text-gray-800 mt-2">{{ ticket.title }}</h1>
+      </div>
+      <div class="flex gap-2 flex-wrap">
+        <span class="text-xs font-bold px-3 py-1 rounded-full {% if ticket.priority == 'P1' %}bg-red-100 text-red-700{% elif ticket.priority == 'P2' %}bg-orange-100 text-orange-700{% elif ticket.priority == 'P3' %}bg-yellow-100 text-yellow-700{% else %}bg-gray-100 text-gray-600{% endif %}">{{ ticket.priority }}</span>
+        <span class="text-xs font-semibold px-3 py-1 rounded-full {% if ticket.status == 'Resolved' %}bg-green-100 text-green-700{% elif ticket.status == 'Open' %}bg-blue-100 text-blue-700{% elif ticket.status == 'In Progress' %}bg-indigo-100 text-indigo-700{% else %}bg-gray-100 text-gray-600{% endif %}">{{ ticket.status }}</span>
+        <span class="text-xs bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">{{ ticket.category }}</span>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-4 text-xs text-gray-500 border-t border-gray-100 pt-4">
+      <span>👥 <strong class="text-gray-700">{{ ticket.assigned_team }}</strong></span>
+      {% if ticket.created_at %}<span>📅 <strong class="text-gray-700">{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</strong></span>{% endif %}
+      {% if ticket.resolution_time_hours %}<span>⏱ <strong class="text-gray-700">{{ ticket.resolution_time_hours }}h</strong></span>{% endif %}
+      <span>SLA: <strong class="{% if sla.color == 'red' %}text-red-600{% elif sla.color == 'yellow' %}text-yellow-600{% else %}text-green-600{% endif %}">{{ sla.label }}</strong>{% if sla.breached %} <span class="bg-red-100 text-red-700 px-1 rounded font-bold">BREACHED</span>{% endif %}</span>
+    </div>
+  </div>
+
+  <!-- Description -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <h2 class="text-sm font-semibold text-gray-600 mb-2">Issue Description</h2>
+    <p class="text-sm text-gray-800">{{ ticket.description }}</p>
+  </div>
+
+  <!-- Resolution -->
+  {% if ticket.resolution %}
+  <div class="bg-green-50 border border-green-200 rounded-xl p-5">
+    <h2 class="text-sm font-semibold text-green-700 mb-2">✅ Resolution</h2>
+    <p class="text-sm text-gray-800">{{ ticket.resolution }}</p>
+  </div>
+  {% endif %}
+  {% if ticket.resolution_notes %}
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <h2 class="text-sm font-semibold text-gray-600 mb-2">🔧 Step-by-Step Notes</h2>
+    <p class="text-sm text-gray-700 whitespace-pre-line">{{ ticket.resolution_notes }}</p>
+  </div>
+  {% endif %}
+
+  <!-- AI Guidance -->
+  {% if ai_guidance %}
+  <div class="bg-purple-50 border border-purple-200 rounded-xl p-5">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold text-purple-700">🤖 AI Next Action Guidance</h2>
+      <div class="flex gap-2 text-xs">
+        <span class="px-2 py-0.5 rounded-full {% if ai_guidance.risk_level == 'High' %}bg-red-100 text-red-700{% elif ai_guidance.risk_level == 'Medium' %}bg-yellow-100 text-yellow-700{% else %}bg-green-100 text-green-700{% endif %}">{{ ai_guidance.risk_level }} Risk</span>
+        <span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Est. {{ ai_guidance.estimated_resolution_hours }}h</span>
+      </div>
+    </div>
+    <ol class="list-decimal list-inside space-y-1.5 mb-3">
+      {% for action in ai_guidance.next_actions %}
+      <li class="text-sm text-gray-800">{{ action }}</li>
+      {% endfor %}
+    </ol>
+    {% if ai_guidance.requires_sub_ticket %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3 text-xs">
+      <strong class="text-yellow-800">⚠ Sub-ticket required:</strong>
+      <span class="text-yellow-700 ml-1">Open a ticket with <strong>{{ ai_guidance.sub_ticket_team }}</strong> — {{ ai_guidance.sub_ticket_reason }}</span>
+    </div>
+    {% endif %}
+    {% if ai_guidance.key_questions %}
+    <div class="border-t border-purple-200 pt-3 mt-3">
+      <p class="text-xs font-semibold text-purple-700 mb-1">Ask the user:</p>
+      <ul class="list-disc list-inside space-y-0.5">
+        {% for q in ai_guidance.key_questions %}<li class="text-xs text-gray-700">{{ q }}</li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Analyze button -->
+  {% if ticket.status not in ('Resolved', 'Closed') %}
+  <form method="POST" action="/tickets/{{ ticket.id }}/analyze">
+    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+      {% if ai_guidance %}🔄 Re-analyze with AI{% else %}🤖 Analyze with AI — Get Next Steps{% endif %}
+    </button>
+  </form>
+  {% endif %}
+
+  <!-- Status update -->
+  {% if ticket.status not in ('Resolved', 'Closed') %}
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <h2 class="text-sm font-semibold text-gray-600 mb-3">Update Status</h2>
+    <form method="POST" action="/tickets/{{ ticket.id }}/status" class="space-y-3" id="status-form">
+      <div class="flex gap-2 flex-wrap items-center">
+        <select name="new_status" id="status-select"
+          class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          {% for s in ["Open","In Progress","Pending External Team","Resolved","Closed"] %}
+          <option value="{{ s }}" {% if ticket.status == s %}selected{% endif %}>{{ s }}</option>
+          {% endfor %}
+        </select>
+        <input type="hidden" name="author" value="Agent" />
+        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition">Update</button>
+      </div>
+      <!-- Resolution fields — shown only when Resolved is selected -->
+      <div id="resolution-fields" class="hidden space-y-2 border-t border-gray-100 pt-3">
+        <p class="text-xs font-medium text-gray-600">Document the resolution — this enters the knowledge base and improves future AI guidance:</p>
+        <input name="resolution" placeholder="One-sentence summary: what was the root cause and how was it fixed?"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+        <textarea name="resolution_notes" rows="4"
+          placeholder="Step-by-step notes — what you checked, what the root cause was, exactly what fixed it..."
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-400"></textarea>
+        <p class="text-xs text-amber-600">The more detail here, the better the AI can help with similar issues in future.</p>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+  <!-- Search for guidance shortcut -->
+  {% if ticket.status not in ('Resolved', 'Closed') %}
+  <form method="POST" action="/search">
+    <input type="hidden" name="description" value="{{ ticket.description }}">
+    <button type="submit"
+      class="w-full bg-white border border-indigo-300 hover:border-indigo-500 text-indigo-600 hover:text-indigo-800 text-sm font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+      🔍 Search Knowledge Base for Guidance on This Ticket
+    </button>
+  </form>
+  {% endif %}
+
+  <!-- Add work note -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <h2 class="text-sm font-semibold text-gray-600 mb-3">Add Work Note</h2>
+    <form method="POST" action="/tickets/{{ ticket.id }}/notes" class="space-y-2">
+      <select name="note_type" class="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        <option value="comment">💬 Comment</option>
+        <option value="investigation">🔍 Investigation Note</option>
+        <option value="workaround">🔧 Workaround Applied</option>
+        <option value="pending_response">⏳ Waiting on Response</option>
+      </select>
+      <textarea name="content" rows="3" required placeholder="Document what you did, what you found, or what you're waiting on..."
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
+      <input type="hidden" name="author" value="Agent" />
+      <button type="submit" class="bg-gray-700 hover:bg-gray-800 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition">Add Note</button>
+    </form>
+  </div>
+
+  <!-- Activity Timeline -->
+  {% if work_notes %}
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <h2 class="text-sm font-semibold text-gray-600 mb-4">Activity Timeline</h2>
+    <div class="space-y-4">
+      {% for note in work_notes %}
+      <div class="flex gap-3">
+        <div class="flex-shrink-0 mt-1.5 w-2.5 h-2.5 rounded-full {% if note.note_type == 'status_change' %}bg-indigo-400{% elif note.note_type == 'ai_suggestion' %}bg-purple-400{% elif note.note_type == 'investigation' %}bg-blue-400{% elif note.note_type == 'workaround' %}bg-orange-400{% else %}bg-gray-300{% endif %}"></div>
+        <div class="flex-1 min-w-0">
+          <div class="text-xs text-gray-400">{{ note.created_at.strftime('%Y-%m-%d %H:%M') }} &bull; {{ note.author }} &bull; <span class="capitalize">{{ note.note_type.replace('_',' ') }}</span></div>
+          <p class="text-sm text-gray-800 mt-0.5">{{ note.content }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Sub-tickets -->
+  {% if sub_tickets %}
+  <div class="bg-white border border-gray-200 rounded-xl p-5">
+    <h2 class="text-sm font-semibold text-gray-600 mb-3">Sub-Tickets ({{ sub_tickets|length }})</h2>
+    <div class="divide-y divide-gray-100">
+      {% for sub in sub_tickets %}
+      <div class="flex items-center justify-between py-2">
+        <a href="/tickets/{{ sub.id }}" class="text-sm text-indigo-600 hover:underline">{{ sub.ticket_number }} — {{ sub.title }}</a>
+        <div class="flex gap-2 text-xs">
+          <span class="text-gray-500">{{ sub.assigned_team }}</span>
+          <span class="{% if sub.status == 'Resolved' %}text-green-600{% elif sub.status == 'Open' %}text-blue-600{% else %}text-indigo-600{% endif %}">{{ sub.status }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Open sub-ticket -->
+  {% if ticket.status not in ('Resolved', 'Closed') %}
+  <details class="bg-white border border-gray-200 rounded-xl p-5">
+    <summary class="text-sm font-semibold text-gray-600 cursor-pointer select-none">+ Open Sub-Ticket with Another Team</summary>
+    <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3 text-xs text-yellow-800">
+      Use this when resolving this ticket requires another team (Fund Services, Network, Vendor, etc.). The sub-ticket will be linked here and tracked separately.
+    </div>
+    <form method="POST" action="/tickets/{{ ticket.id }}/sub" class="space-y-2 mt-3">
+      <input name="title" required placeholder="Sub-ticket title (e.g. IP Whitelist Request — Client XYZ)"
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      <textarea name="description" required rows="2" placeholder="What does the other team need to do and why?"
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
+      <div class="grid grid-cols-3 gap-2">
+        <select name="category" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          {% for c in ["Network","Software","Hardware","Access","Email","Security"] %}<option>{{ c }}</option>{% endfor %}
+        </select>
+        <select name="priority" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+          {% for p in ["P1","P2","P3","P4"] %}<option>{{ p }}</option>{% endfor %}
+        </select>
+        <input name="assigned_team" required placeholder="Team name" value="{{ ticket.assigned_team }}"
+          class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      </div>
+      <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition">Create Sub-Ticket</button>
+    </form>
+  </details>
+  {% endif %}
+
+  <!-- Tags -->
+  {% if ticket.tags %}
+  <div class="flex flex-wrap gap-2 pb-4">
+    {% for tag in ticket.tags.split(',') %}<span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{{ tag.strip() }}</span>{% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+  const sel = document.getElementById('status-select');
+  const fields = document.getElementById('resolution-fields');
+  if (sel && fields) {
+    function toggle() {
+      fields.classList.toggle('hidden', sel.value !== 'Resolved');
+    }
+    sel.addEventListener('change', toggle);
+    toggle();
+  }
+</script>
+{% endblock %}

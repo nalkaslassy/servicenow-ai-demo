@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — IT Support Portal{% endblock %}
+{% block content %}
+
+<!-- Knowledge gap warning -->
+{% if low_conf_count >= 3 %}
+<div class="bg-amber-50 border border-amber-300 text-amber-800 rounded-xl p-4 mb-4 flex items-center gap-3">
+  <span class="text-lg">🧠</span>
+  <div>
+    <span class="font-semibold text-sm">Knowledge Gap Detected</span>
+    <span class="text-sm ml-2">{{ low_conf_count }} low-confidence searches in the last 24 hours — consider adding resolved tickets to the knowledge base.</span>
+  </div>
+  <a href="/analytics" class="ml-auto text-xs text-amber-700 underline hover:text-amber-900">View Analytics</a>
+</div>
+{% endif %}
+
+<!-- Major incident banner -->
+{% if major_incidents %}
+<div class="bg-red-50 border border-red-300 text-red-800 rounded-xl p-4 mb-5 flex items-center gap-3 flex-wrap">
+  <span class="font-bold text-sm">⚠ Major Incident Alert</span>
+  {% for mi in major_incidents %}
+  <span class="bg-red-100 border border-red-200 text-red-700 text-xs font-semibold px-3 py-1 rounded-full">
+    {{ mi.category }}: {{ mi.count }} open tickets in the last hour
+  </span>
+  {% endfor %}
+  <span class="text-xs text-red-600 ml-auto">Escalate to a Major Incident Manager</span>
+</div>
+{% endif %}
+
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-gray-800">Ticket Dashboard</h1>
+  <a href="/" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+    + Report Issue
+  </a>
+</div>
+
+<!-- Stats row -->
+<div class="grid grid-cols-4 gap-4 mb-6">
+  {% for label, val, color in [
+    ("Total", stats.total, "indigo"),
+    ("Open", stats.open, "blue"),
+    ("In Progress", stats.in_progress, "yellow"),
+    ("Resolved", stats.resolved, "green")
+  ] %}
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 text-center">
+    <div class="text-2xl font-bold text-{{ color }}-600">{{ val }}</div>
+    <div class="text-xs text-gray-500 mt-1">{{ label }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Filters -->
+<form method="GET" action="/tickets/" class="bg-white border border-gray-200 rounded-xl p-4 mb-4 flex flex-wrap gap-3 items-end">
+  <div>
+    <label class="block text-xs text-gray-500 mb-1">Status</label>
+    <select name="status" class="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      <option value="">All Statuses</option>
+      {% for s in statuses %}
+      <option value="{{ s }}" {% if filter_status == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs text-gray-500 mb-1">Category</label>
+    <select name="category" class="border border-gray-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400">
+      <option value="">All Categories</option>
+      {% for c in categories %}
+      <option value="{{ c }}" {% if filter_category == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition">Filter</button>
+  {% if filter_status or filter_category %}
+  <a href="/tickets/" class="text-sm text-gray-500 hover:underline self-center">Clear</a>
+  {% endif %}
+</form>
+
+<!-- Ticket table -->
+<div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-gray-50 border-b border-gray-200">
+      <tr>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Ticket #</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Title</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Category</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Priority</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Team</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">SLA</th>
+        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for t in tickets %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-4 py-3 font-mono text-xs text-gray-500">{{ t.ticket_number }}</td>
+        <td class="px-4 py-3 text-gray-800 max-w-xs truncate">{{ t.title }}</td>
+        <td class="px-4 py-3">
+          <span class="bg-indigo-50 text-indigo-600 text-xs px-2 py-0.5 rounded">{{ t.category }}</span>
+        </td>
+        <td class="px-4 py-3">
+          <span class="text-xs font-bold
+            {% if t.priority == 'P1' %}text-red-600
+            {% elif t.priority == 'P2' %}text-orange-500
+            {% elif t.priority == 'P3' %}text-yellow-600
+            {% else %}text-gray-500{% endif %}">
+            {{ t.priority }}
+          </span>
+        </td>
+        <td class="px-4 py-3">
+          <span class="text-xs px-2 py-0.5 rounded-full
+            {% if t.status == 'Resolved' %}bg-green-100 text-green-700
+            {% elif t.status == 'Open' %}bg-blue-100 text-blue-700
+            {% elif t.status == 'In Progress' %}bg-indigo-100 text-indigo-700
+            {% else %}bg-gray-100 text-gray-500{% endif %}">
+            {{ t.status }}
+          </span>
+        </td>
+        <td class="px-4 py-3 text-xs text-gray-500">{{ t.assigned_team }}</td>
+        <td class="px-4 py-3">
+          {% set sla = ticket_slas[t.id] %}
+          <span class="text-xs font-semibold {% if sla.color == 'red' %}text-red-600{% elif sla.color == 'yellow' %}text-yellow-500{% else %}text-green-600{% endif %}">
+            {{ sla.label }}{% if sla.breached %} ⚠{% endif %}
+          </span>
+        </td>
+        <td class="px-4 py-3">
+          <a href="/tickets/{{ t.id }}" class="text-indigo-600 hover:underline text-xs">View</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8" class="px-4 py-8 text-center text-gray-400 text-sm">No tickets found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="text-xs text-gray-400 mt-3">Showing {{ tickets|length }} ticket{{ 's' if tickets|length != 1 }}.</p>
+
+{% endblock %}
