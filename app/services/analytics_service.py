@@ -59,6 +59,34 @@ def get_knowledge_gaps(db: Session, limit: int = 5) -> list[dict]:
     return [{"description": g.description, "created_at": g.created_at} for g in gaps]
 
 
+def get_roi_metrics(db: Session) -> dict:
+    ai_assisted = db.query(Ticket).filter(
+        Ticket.status == "Resolved",
+        Ticket.ai_guidance.isnot(None),
+        Ticket.resolution_time_hours.isnot(None),
+    ).all()
+    non_ai = db.query(Ticket).filter(
+        Ticket.status == "Resolved",
+        Ticket.ai_guidance.is_(None),
+        Ticket.resolution_time_hours.isnot(None),
+    ).all()
+
+    avg_ai = round(sum(t.resolution_time_hours for t in ai_assisted) / len(ai_assisted), 1) if ai_assisted else None
+    avg_non_ai = round(sum(t.resolution_time_hours for t in non_ai) / len(non_ai), 1) if non_ai else None
+
+    hours_saved = None
+    if avg_ai is not None and avg_non_ai is not None and avg_non_ai > avg_ai:
+        hours_saved = round((avg_non_ai - avg_ai) * len(ai_assisted), 1)
+
+    return {
+        "ai_assisted_count": len(ai_assisted),
+        "non_ai_count": len(non_ai),
+        "avg_hours_ai": avg_ai,
+        "avg_hours_non_ai": avg_non_ai,
+        "hours_saved": hours_saved,
+    }
+
+
 def get_recent_low_confidence_count(db: Session, hours: int = 24) -> int:
     # SQLite returns timezone-naive datetimes — compare naive to naive
     from datetime import datetime, timedelta

@@ -44,8 +44,7 @@ def change_status(
             except Exception:
                 pass
         parent = ticket_service.get_ticket(db, ticket.parent_ticket_id) if ticket.parent_ticket_id else None
-        return templates.TemplateResponse("ticket_detail.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "ticket_detail.html", {
             "ticket": ticket,
             "work_notes": work_notes,
             "sub_tickets": sub_tickets,

@@ -111,10 +111,14 @@ Return a JSON object with this exact structure:
   "priority": "P1|P2|P3|P4",
   "assigned_team": "Exact team name from the list above",
   "priority_reason": "One sentence explaining the priority",
-  "routing_reason": "One sentence explaining why this team"
+  "routing_reason": "One sentence explaining why this team",
+  "confidence": "High|Medium|Low",
+  "key_signals": ["signal phrase from description that drove classification", "another signal", "third signal"]
 }}
 
 Priority guide: P1=critical/security/complete outage, P2=significant impact/multiple users, P3=single user/workaround exists, P4=minor/cosmetic.
+confidence: High if the issue clearly matches one category, Medium if ambiguous, Low if very vague.
+key_signals: 2-4 short phrases from the user's description that most influenced your classification decision.
 Return ONLY valid JSON."""
 
     response = client.messages.create(
@@ -132,8 +136,80 @@ Return ONLY valid JSON."""
             "priority": "P3",
             "assigned_team": "Software Support",
             "priority_reason": "Standard priority assigned.",
-            "routing_reason": "Routed to Software Support as default."
+            "routing_reason": "Routed to Software Support as default.",
+            "confidence": "Low",
+            "key_signals": []
         }
+
+
+def generate_incident_report(ticket, work_notes: list) -> str:
+    notes_text = "\n".join([
+        f"[{n.note_type.replace('_', ' ')}] {n.created_at.strftime('%Y-%m-%d %H:%M')} — {n.content}"
+        for n in work_notes
+    ]) or "No activity notes recorded."
+
+    prompt = f"""Generate a professional post-incident report for this resolved IT support ticket.
+
+TICKET:
+Number: {ticket.ticket_number}
+Title: {ticket.title}
+Category: {ticket.category}
+Priority: {ticket.priority}
+Team: {ticket.assigned_team}
+Created: {ticket.created_at.strftime('%Y-%m-%d %H:%M') if ticket.created_at else 'Unknown'}
+Resolved: {ticket.resolved_at.strftime('%Y-%m-%d %H:%M') if ticket.resolved_at else 'Unknown'}
+Resolution Time: {ticket.resolution_time_hours}h
+
+ISSUE DESCRIPTION:
+{ticket.description}
+
+RESOLUTION SUMMARY:
+{ticket.resolution or 'Not documented'}
+
+RESOLUTION STEPS:
+{ticket.resolution_notes or 'Not documented'}
+
+ACTIVITY LOG:
+{notes_text}
+
+Write a professional post-incident report with exactly these sections:
+## Executive Summary
+## Timeline of Events
+## Root Cause
+## Resolution Steps Taken
+## Business Impact
+## Recommendations
+
+Be factual. Base everything only on the information provided. Be concise and professional."""
+
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=1200,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.content[0].text.strip()
+
+
+def query_analytics(question: str, analytics_data: dict) -> str:
+    data_summary = json.dumps(analytics_data, indent=2, default=str)
+
+    prompt = f"""You are an analytics assistant for an IT support ticket system.
+Answer the question using ONLY the data below. Be concise and specific — cite exact numbers from the data.
+If the data does not contain enough information to answer, say so clearly.
+
+ANALYTICS DATA:
+{data_summary}
+
+QUESTION: {question}
+
+Answer in 1-3 sentences maximum."""
+
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=256,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.content[0].text.strip()
 
 
 def suggest_next_action(ticket, resolved_tickets: list = None) -> dict:

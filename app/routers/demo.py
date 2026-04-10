@@ -8,4 +8,4 @@ templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates"
 
 @router.get("/demo", response_class=HTMLResponse)
 def demo(request: Request):
-    return templates.TemplateResponse("demo.html", {"request": request})
+    return templates.TemplateResponse(request, "demo.html", {})

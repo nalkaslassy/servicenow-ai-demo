@@ -19,8 +19,7 @@ def dashboard(request: Request, status: str = None, category: str = None,
     ticket_slas = {t.id: sla_service.get_sla_info(t) for t in tickets}
     major_incidents = sla_service.detect_major_incidents(tickets)
     low_conf_count = analytics_service.get_recent_low_confidence_count(db)
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "dashboard.html", {
         "tickets": tickets,
         "stats": stats,
         "ticket_slas": ticket_slas,
@@ -95,12 +94,51 @@ def ticket_detail(ticket_id: int, request: Request, db: Session = Depends(get_db
     if ticket.parent_ticket_id:
         parent = ticket_service.get_ticket(db, ticket.parent_ticket_id)
 
-    return templates.TemplateResponse("ticket_detail.html", {
-        "request": request,
+    similar_tickets = []
+    if ticket.status not in ("Resolved", "Closed"):
+        similar_tickets = ticket_service.find_similar_open_tickets(db, ticket.category, exclude_id=ticket_id)
+
+    return templates.TemplateResponse(request, "ticket_detail.html", {
         "ticket": ticket,
         "work_notes": work_notes,
         "sub_tickets": sub_tickets,
         "sla": sla,
         "ai_guidance": ai_guidance,
         "parent": parent,
+        "similar_tickets": similar_tickets,
     })
+
+
+@router.post("/{ticket_id}/report", response_class=HTMLResponse)
+def generate_report(ticket_id: int, request: Request, db: Session = Depends(get_db)):
+    ticket = ticket_service.get_ticket(db, ticket_id)
+    work_notes = ticket_service.get_work_notes(db, ticket_id)
+    report = ai_service.generate_incident_report(ticket, work_notes)
+    return templates.TemplateResponse(request, "incident_report.html", {
+        "ticket": ticket,
+        "report": report,
+    })
+
+
+@router.post("/simulate-incident")
+def simulate_major_incident(db: Session = Depends(get_db)):
+    scenarios = [
+        {
+            "title": "VPN connection dropping every 15 minutes",
+            "description": "Multiple users reporting VPN disconnects. Affects remote workers on the East Coast. Sessions drop after roughly 15 minutes and require manual reconnect.",
+            "category": "Network", "priority": "P2", "assigned_team": "Network Team",
+        },
+        {
+            "title": "VPN authentication failure — cannot connect",
+            "description": "User receives 'Authentication failed' when connecting via Cisco AnyConnect. Issue started this morning. Affects at least 8 users in the London office.",
+            "category": "Network", "priority": "P2", "assigned_team": "Network Team",
+        },
+        {
+            "title": "VPN gateway packet loss — multiple sites affected",
+            "description": "Network monitoring showing 40% packet loss on the primary VPN gateway. Three office locations are impacted. Users unable to access internal systems.",
+            "category": "Network", "priority": "P1", "assigned_team": "Network Team",
+        },
+    ]
+    for s in scenarios:
+        ticket_service.create_ticket(db, s)
+    return RedirectResponse(url="/tickets/?category=Network", status_code=303)

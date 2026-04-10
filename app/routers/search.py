@@ -14,7 +14,7 @@ templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates"
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request, db: Session = Depends(get_db)):
     stats = ticket_service.get_stats(db)
-    return templates.TemplateResponse("index.html", {"request": request, "stats": stats})
+    return templates.TemplateResponse(request, "index.html", {"stats": stats})
 
 @router.post("/search", response_class=HTMLResponse)
 def search(request: Request, description: str = Form(...), db: Session = Depends(get_db)):
@@ -36,8 +36,7 @@ def search(request: Request, description: str = Form(...), db: Session = Depends
     ))
     db.commit()
 
-    return templates.TemplateResponse("results.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "results.html", {
         "description": description,
         "guidance": guidance,
         "referenced": referenced,
@@ -49,8 +48,7 @@ def classify_form(request: Request, description: str = "", db: Session = Depends
     classification = None
     if description:
         classification = ai_service.classify_new_ticket(description, teams)
-    return templates.TemplateResponse("new_ticket.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "new_ticket.html", {
         "description": description,
         "classification": classification,
     })

@@ -98,6 +98,17 @@ def create_sub_ticket(db: Session, parent_id: int, data: dict) -> Ticket:
                   f"Sub-ticket {ticket.ticket_number} opened with {ticket.assigned_team}.")
     return ticket
 
+# ── Duplicate detection ───────────────────────────────────────────────────────
+
+def find_similar_open_tickets(db: Session, category: str, exclude_id: int = None):
+    q = db.query(Ticket).filter(
+        Ticket.category == category,
+        Ticket.status.in_(["Open", "In Progress"]),
+    )
+    if exclude_id:
+        q = q.filter(Ticket.id != exclude_id)
+    return q.order_by(Ticket.created_at.desc()).limit(5).all()
+
 # ── AI guidance ───────────────────────────────────────────────────────────────
 
 def save_ai_guidance(db: Session, ticket_id: int, guidance_json: str) -> Ticket:

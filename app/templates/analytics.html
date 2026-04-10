@@ -7,6 +7,36 @@
   <span class="text-xs text-gray-400">Live data from your knowledge base</span>
 </div>
 
+<!-- Natural Language Query -->
+<div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+  <p class="text-xs font-semibold text-gray-400 uppercase mb-1">Ask a Question About Your Data</p>
+  <p class="text-xs text-gray-400 mb-3">Type any question in plain English — AI will answer using the live analytics data.</p>
+  <form method="POST" action="/analytics/query" class="flex gap-2" id="nl-form">
+    <input type="text" name="question" required
+      value="{{ nl_question or '' }}"
+      placeholder="e.g. Which category has the most open tickets? What is the average P1 resolution time?"
+      class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    <button type="submit" id="nl-btn"
+      class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap">
+      <span id="nl-btn-text">Ask AI</span>
+      <span id="nl-btn-loading" class="hidden">Thinking...</span>
+    </button>
+  </form>
+  {% if nl_answer %}
+  <div class="mt-3 bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+    <p class="text-xs font-semibold text-indigo-600 mb-1">🤖 AI Answer</p>
+    <p class="text-sm text-gray-800">{{ nl_answer }}</p>
+  </div>
+  {% endif %}
+</div>
+<script>
+  document.getElementById('nl-form').addEventListener('submit', () => {
+    document.getElementById('nl-btn-text').classList.add('hidden');
+    document.getElementById('nl-btn-loading').classList.remove('hidden');
+    document.getElementById('nl-btn').disabled = true;
+  });
+</script>
+
 <!-- Top row: feedback + escalation -->
 <div class="grid grid-cols-2 gap-4 mb-6">
 
@@ -92,6 +122,43 @@
   </div>
   {% else %}
   <p class="text-sm text-gray-400">No resolved tickets with resolution time data yet.</p>
+  {% endif %}
+</div>
+
+<!-- ROI Metrics -->
+<div class="bg-white border border-gray-200 rounded-xl p-5 mb-6">
+  <p class="text-xs font-semibold text-gray-400 uppercase mb-1">AI ROI Estimate</p>
+  <p class="text-xs text-gray-400 mb-4">Compares resolution time for AI-analyzed tickets vs. tickets resolved without AI guidance.</p>
+  {% if roi.ai_assisted_count == 0 %}
+  <p class="text-sm text-gray-400">No AI-analyzed tickets resolved yet — click "Analyze with AI" on a ticket to start building data.</p>
+  {% else %}
+  <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <div class="text-center border border-gray-100 rounded-xl p-4">
+      <p class="text-2xl font-bold text-indigo-600">{{ roi.ai_assisted_count }}</p>
+      <p class="text-xs text-gray-500 mt-1">AI-Assisted Tickets</p>
+    </div>
+    <div class="text-center border border-gray-100 rounded-xl p-4">
+      <p class="text-2xl font-bold text-gray-500">{{ roi.non_ai_count }}</p>
+      <p class="text-xs text-gray-500 mt-1">Non-AI Tickets</p>
+    </div>
+    <div class="text-center border border-gray-100 rounded-xl p-4">
+      <p class="text-2xl font-bold {% if roi.avg_hours_ai and roi.avg_hours_non_ai and roi.avg_hours_ai < roi.avg_hours_non_ai %}text-green-600{% else %}text-gray-500{% endif %}">
+        {% if roi.avg_hours_ai %}{{ roi.avg_hours_ai }}h{% else %}—{% endif %}
+      </p>
+      <p class="text-xs text-gray-500 mt-1">Avg Resolution (AI)</p>
+    </div>
+    <div class="text-center border border-gray-100 rounded-xl p-4">
+      <p class="text-2xl font-bold text-gray-500">{% if roi.avg_hours_non_ai %}{{ roi.avg_hours_non_ai }}h{% else %}—{% endif %}</p>
+      <p class="text-xs text-gray-500 mt-1">Avg Resolution (No AI)</p>
+    </div>
+  </div>
+  {% if roi.hours_saved %}
+  <div class="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+    <p class="text-3xl font-bold text-green-600">~{{ roi.hours_saved }}h saved</p>
+    <p class="text-xs text-gray-500 mt-1">Estimated total time saved across {{ roi.ai_assisted_count }} AI-assisted tickets</p>
+    <p class="text-xs text-gray-400 mt-1">Methodology: (avg non-AI resolution time − avg AI resolution time) × AI-assisted ticket count</p>
+  </div>
+  {% endif %}
   {% endif %}
 </div>
 
